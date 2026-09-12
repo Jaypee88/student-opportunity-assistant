@@ -245,34 +245,7 @@ def _render_custom_search() -> dict | None:
     st.caption(
         "These preferences are temporary and will not change your saved profile."
     )
-    eligibility = score.get("eligibility")
 
-    if eligibility:
-        eligibility_status = eligibility["status"]
-
-        if eligibility_status == "Eligible":
-            st.success("Eligibility: Eligible")
-
-        elif eligibility_status == "Not eligible":
-            st.error("Eligibility: Not eligible")
-
-        else:
-            st.warning("Eligibility: Needs review")
-
-        if eligibility["checks"]:
-            with st.expander("Eligibility checks"):
-                for check in eligibility["checks"]:
-                    if check["result"] == "pass":
-                        icon = "✅"
-                    elif check["result"] == "fail":
-                        icon = "❌"
-                    else:
-                        icon = "⚠️"
-
-                    st.write(
-                        f"{icon} **{check['requirement']}:** "
-                        f"{check['reason']}"
-                    )
 
     with st.form("custom_recommendation_form"):
         c1, c2 = st.columns(2)
