@@ -1,148 +1,405 @@
 # Student Opportunity Assistant
 
-An AI-assisted platform that helps university students **discover, understand,
-evaluate, and prepare for** opportunities — internships, scholarships,
-fellowships, hackathons, competitions, grants, research programs, conferences,
-and other legitimate student-development programs.
+An AI-assisted platform that helps university students **discover, understand, evaluate, and prepare for** opportunities — including internships, scholarships, fellowships, hackathons, competitions, grants, research programs, conferences, training programs, and other student-development opportunities.
 
-**Discover → Filter → Understand → Match → Prepare → Apply**
+**Discover → Understand → Match → Evaluate → Prepare → Apply**
 
-Built with Streamlit and the Claude API. The distinctive design decision:
-**Claude never invents opportunities.** It reasons only over a curated,
-verified dataset and text the student pastes themselves.
+Built primarily with **Streamlit and the Anthropic Claude API**.
+
+The core design principle is simple:
+
+> **Claude should reason over information, not invent it.**
+
+The application separates opportunity data and deterministic application logic from AI reasoning. This makes the system more transparent, easier to evaluate, and safer for students relying on eligibility and deadline information.
 
 ---
 
 ## The problem
 
-Students spend hours across scattered aggregator sites trying to figure out
-whether an opportunity is legitimate, whether they're eligible, what a
-deadline actually means, and what an application is really asking for — often
-without a reliable way to prepare.
+Students often spend significant time searching across different websites for opportunities and then trying to determine:
 
-Generic chatbots make this worse: asked to "list AI internships," a language
-model will happily produce plausible-sounding but sometimes fictional
-programs, deadlines, and links.
+* Whether an opportunity is legitimate
+* Whether they are eligible
+* Whether the deadline is still active
+* What documents are required
+* What the organization is actually looking for
+* Whether the opportunity is relevant to their field, skills, and academic level
+* How to prepare a strong application
+
+Generic AI chatbots can make this harder when they generate plausible-sounding but unsupported opportunities, deadlines, eligibility requirements, or application links.
+
+The goal of this project is therefore not simply to put a chatbot in front of students.
+
+It is to combine **structured opportunity data, deterministic matching logic, and AI reasoning** in a way that keeps the boundaries between facts and AI-generated explanations clear.
+
+---
 
 ## The solution
 
-A three-layer architecture that keeps AI reasoning separate from data truth:
+The application follows a layered approach:
 
-```
-SOURCE  →  VERIFIED OPPORTUNITY DATA  →  CLAUDE  →  STUDENT
-```
-
-*not*
-
-```
-Internet  →  Claude guesses  →  Student
-```
-
-Every opportunity in `data/opportunities.json` was researched from its
-official organization page (or cross-checked against it), and stores
-`official_source`, `application_url`, and `last_verified`. Claude is used
-purely as the **reasoning/language layer** on top of that data — never as the
-source of the data itself.
-
-## Key features
-
-- **Discover Opportunities** — natural-language + filtered search over the
-  verified database
-- **Opportunity Details** — full record with official application link and
-  verification date
-- **Analyze an Opportunity** — paste any listing/eligibility text and get a
-  structured breakdown (overview, eligibility, deadline, requirements,
-  documents, concerns, fit, action checklist) — with explicit
-  *"Not specified in the provided information"* instead of guesses
-- **My Recommendations** — a **transparent, rule-based** match score (field,
-  skill, academic level, location, category), with Claude only explaining the
-  score in plain language, never computing it
-- **Opportunity Assistant** — multi-turn Q&A grounded in one specific,
-  verified opportunity record (uses the Claude Messages API's native
-  multi-turn support)
-- **Application Helper** — an application *coach*, not a ghostwriter: it
-  helps you understand the prompt and structure your own real experiences,
-  and refuses to fabricate achievements
-- **Saved Opportunities** — with an upcoming-deadlines view
-- **Deadline-aware status logic** — Open / Closing Soon / Closed / Date
-  Uncertain / Verification Needed, computed deterministically so the app
-  never claims something is open just because information is missing
-
-## Built with Claude
-
-Every feature that touches Claude lives behind a single module,
-`services/claude_service.py`, and every system prompt lives in
-`utils/claude_prompts.py` so the "don't invent information" instruction is
-consistent and reviewable in one place.
-
-| Feature | Claude's job | Explicitly NOT Claude's job |
-|---|---|---|
-| Smart search | Suggest keywords/categories from a natural-language query | Return or invent opportunities itself |
-| Analyze an Opportunity | Structure pasted text into a clear breakdown | Fill in missing eligibility/deadline details |
-| Opportunity Assistant | Answer follow-ups grounded in one verified record | Answer beyond what the record + profile state |
-| Recommendations | Explain a match in plain language | Compute the match score (that's rule-based) |
-| Application Helper | Coach structure, refine the student's own words | Fabricate achievements or write generic answers |
-
-Uses the Anthropic **Messages API** (`claude-sonnet-4-6`) for both single-turn
-calls (analysis, search interpretation, recommendation explanations) and
-multi-turn conversations (Opportunity Assistant, Application Helper), with
-structured JSON output for anything the UI needs to parse reliably.
-
-## Architecture
-
-```
-Student Input (search / profile / pasted text)
-        │
-        ▼
-┌─────────────────────────┐
-│   Streamlit UI (pages)   │  navigation, forms, cards, session state
-└───────────┬───────────────┘
-            │
-┌───────────▼───────────────┐
-│  opportunity_service.py    │  load / validate / search / filter / sort JSON
-│  recommendation_service.py │  transparent rule-based scoring
-└───────────┬───────────────┘
-            │ (structured data only — never free text)
-┌───────────▼───────────────┐
-│    claude_service.py       │  the ONLY module calling the Anthropic API
-│  (Messages API, JSON mode) │
-└───────────┬───────────────┘
-            │
-        Anthropic API
+```text
+SOURCE
+   ↓
+STRUCTURED OPPORTUNITY DATA
+   ↓
+RULE-BASED ELIGIBILITY & MATCHING
+   ↓
+CLAUDE REASONING / EXPLANATION
+   ↓
+STUDENT
 ```
 
-## Project structure
+Not:
 
+```text
+Internet
+   ↓
+AI guesses
+   ↓
+Student
 ```
+
+The current dataset is intentionally small because the project is still in its **testing/prototype phase**.
+
+The current opportunities are manually curated and researched from authoritative sources. Each record can contain information such as:
+
+* Official application URL
+* Eligibility information
+* Deadline
+* Location
+* Skills
+* Fields
+* Education level
+* Country eligibility
+* Funding information
+* Source information
+* Verification date
+* Verification status
+
+The long-term goal is to expand this into a much larger and continuously maintained opportunity dataset without changing the core application architecture.
+
+---
+
+# Key features
+
+## Discover Opportunities
+
+Students can search and filter the curated opportunity dataset using:
+
+* Opportunity category
+* Location
+* Field
+* Skills
+* Education level
+* Deadline/status
+* Other supported filters
+
+Natural-language search can also be interpreted by Claude and converted into structured search criteria.
+
+Claude does **not** return invented opportunities.
+
+---
+
+## Opportunity Details
+
+Each opportunity has a dedicated detail view containing the available information, including:
+
+* Description
+* Eligibility
+* Deadline
+* Location
+* Skills
+* Education level
+* Official application page
+* Source information
+* Verification status
+
+Students are directed to the official application page rather than an AI-generated or unofficial application link.
+
+---
+
+## My Profile
+
+Students can create a profile containing information that can be used for personalization.
+
+Current profile information includes:
+
+* Field of study
+* Academic level
+* CGPA
+* Country/location
+* Remote/on-site preference
+* Fields of interest
+* Skills
+* Preferred opportunity types
+
+The profile is currently stored in Streamlit session state as an MVP approach. Persistent accounts and cross-device profile storage are future improvements.
+
+---
+
+## My Recommendations
+
+Recommendations use a **transparent, rule-based matching system**.
+
+The system evaluates factors such as:
+
+* Field of study
+* Skills
+* Academic level
+* Location
+* Opportunity category
+
+The result produces a match score and an explanation of how the score was obtained.
+
+Students can either:
+
+### Use My Profile
+
+Use their saved student profile to generate personalized recommendations.
+
+### Customize This Search
+
+Create a temporary recommendation profile for a specific search without changing their saved profile.
+
+This separation allows another student, or the same student with different goals, to explore opportunities without overwriting their permanent profile.
+
+### Eligibility vs. Match
+
+The application intentionally separates **match score** from **eligibility**.
+
+A student can have a high match score while still failing a specific eligibility requirement.
+
+For example:
+
+```text
+Match score: 82/100
+
+Eligibility:
+❌ Not eligible
+
+Reason:
+Required CGPA: 3.5
+Student CGPA: 3.2
+```
+
+Eligibility checks are handled deterministically by application code rather than delegated entirely to an AI model.
+
+This helps prevent an AI model from incorrectly deciding that a student qualifies for an opportunity.
+
+---
+
+## Analyze an Opportunity
+
+Students can paste an opportunity description or eligibility text and receive a structured analysis.
+
+The analysis can include:
+
+* Overview
+* Eligibility
+* Deadline
+* Requirements
+* Documents needed
+* What the organization appears to be looking for
+* Important details
+* Potential concerns
+* Fit for the student
+* Action checklist
+
+The system is instructed to distinguish between information explicitly provided in the text and reasonable observations.
+
+When information is missing, it should report that the information was not specified rather than inventing an answer.
+
+Students can optionally use their saved profile to receive a more personalized fit and eligibility assessment.
+
+---
+
+## Opportunity Assistant
+
+The Opportunity Assistant provides multi-turn conversational assistance around an opportunity.
+
+The assistant can help students understand:
+
+* Eligibility
+* Requirements
+* Deadlines
+* Application expectations
+* Opportunity details
+* Questions about how the opportunity relates to their profile
+
+The assistant is grounded in the opportunity information supplied to it rather than being treated as an unrestricted source of opportunity facts.
+
+---
+
+## Application Helper
+
+The Application Helper acts as an **application coach rather than a ghostwriter**.
+
+It helps students:
+
+* Understand application questions
+* Identify relevant personal experiences
+* Structure their responses
+* Improve clarity
+* Reflect on their actual achievements
+* Develop stronger application narratives
+
+The system is designed not to fabricate achievements, experiences, or qualifications on behalf of the student.
+
+---
+
+## Saved Opportunities
+
+Students can save opportunities they are interested in and view them later.
+
+The application also provides deadline-aware status information to help students distinguish between opportunities that are:
+
+* Open
+* Closing Soon
+* Closed
+* Date Uncertain
+* Verification Needed
+
+Deadline status is calculated deterministically rather than inferred by Claude.
+
+---
+
+# Built with Claude
+
+**Claude is the primary AI provider and the intended AI foundation of this project.**
+
+Every feature that uses Claude is centralized through:
+
+```text
+services/claude_service.py
+```
+
+System prompts are centralized through:
+
+```text
+utils/claude_prompts.py
+```
+
+This makes the AI behavior easier to review, maintain, and improve.
+
+| Feature               | Claude's role                                        | What Claude is NOT responsible for                 |
+| --------------------- | ---------------------------------------------------- | -------------------------------------------------- |
+| Smart search          | Interpret natural-language search intent             | Invent or return opportunities                     |
+| Opportunity analysis  | Structure and explain pasted opportunity information | Invent missing eligibility or deadline information |
+| Opportunity Assistant | Answer grounded follow-up questions                  | Act as an unrestricted opportunity database        |
+| Recommendations       | Explain deterministic matching results               | Calculate the match score                          |
+| Application Helper    | Coach the student through their own experiences      | Fabricate achievements or qualifications           |
+
+The project uses the Anthropic **Messages API** for Claude-powered features, including structured analysis and multi-turn conversations.
+
+---
+
+# Development and Gemini testing
+
+During development, **Gemini was temporarily integrated as a testing provider**.
+
+This was primarily because Anthropic API credits were not available during development.
+
+Gemini allowed the application structure and AI-assisted workflows to be tested without blocking development.
+
+Gemini is **not the core product direction**.
+
+The intended architecture and application story remain **Claude-first**, with Claude serving as the primary AI provider.
+
+The AI service layer is structured so that providers can be tested independently without changing the application's main UI and business logic.
+
+---
+
+# Architecture
+
+```text
+Student
+   │
+   ├── Search
+   ├── Profile
+   ├── Pasted opportunity
+   └── Application question
+          │
+          ▼
+┌─────────────────────────────┐
+│       Streamlit UI          │
+│ pages / forms / navigation  │
+└──────────────┬──────────────┘
+               │
+       ┌───────┴────────┐
+       ▼                ▼
+Opportunity Data     Student Profile
+       │                │
+       └───────┬────────┘
+               ▼
+┌─────────────────────────────┐
+│ Rule-based application      │
+│ logic                       │
+│                             │
+│ • Eligibility checks        │
+│ • Match scoring             │
+│ • Deadline/status logic     │
+└──────────────┬──────────────┘
+               │
+               ▼
+┌─────────────────────────────┐
+│       Claude Service        │
+│                             │
+│ • Analysis                 │
+│ • Explanation              │
+│ • Search interpretation    │
+│ • Conversational support   │
+│ • Application coaching     │
+└──────────────┬──────────────┘
+               │
+               ▼
+            Student
+```
+
+The architectural principle is:
+
+> **Application code determines structured facts and calculations; Claude explains, interprets, and assists.**
+
+---
+
+# Project structure
+
+```text
 student-opportunity-assistant/
 │
-├── app.py                       # Entry point: config, session state, nav, routing
-├── requirements.txt
+├── app.py
 ├── README.md
+├── requirements.txt
 ├── .gitignore
 ├── .env.example
+│
 ├── .streamlit/
-│   ├── config.toml              # Theme
-│   └── secrets.toml.example     # Template for Streamlit Cloud secrets
+│   ├── config.toml
+│   └── secrets.toml.example
 │
 ├── data/
-│   └── opportunities.json       # Curated, verified opportunity dataset
+│   └── opportunities.json
 │
 ├── services/
-│   ├── claude_service.py        # All Anthropic API calls
-│   ├── opportunity_service.py   # Data loading/search/filter/sort (no AI)
-│   └── recommendation_service.py# Deterministic match scoring (no AI)
+│   ├── __init__.py
+│   ├── claude_service.py
+│   ├── gemini_service.py
+│   ├── opportunity_service.py
+│   └── recommendation_service.py
 │
 ├── utils/
-│   ├── validators.py            # Schema validation for opportunity records
-│   ├── helpers.py                # Date/status logic, formatting
-│   ├── claude_prompts.py         # All system prompts, as reviewable data
-│   └── ui_components.py          # Shared cards / detail view / CSS
+│   ├── __init__.py
+│   ├── validators.py
+│   ├── helpers.py
+│   ├── claude_prompts.py
+│   └── ui_components.py
 │
-└── app_pages/                    # (named app_pages, not "pages", to avoid
-    ├── home.py                   #  colliding with Streamlit's automatic
-    ├── discover.py                #  pages/ multipage detection)
+└── app_pages/
+    ├── __init__.py
+    ├── home.py
+    ├── discover.py
     ├── analyze.py
+    ├── profile.py
     ├── recommendations.py
     ├── assistant.py
     ├── application_helper.py
@@ -150,200 +407,349 @@ student-opportunity-assistant/
     └── about.py
 ```
 
-## Data schema
+---
 
-Each opportunity in `data/opportunities.json` follows this shape:
+# Recommendation architecture
+
+The recommendation system is intentionally deterministic.
+
+```text
+Student Profile
+       ↓
+Opportunity
+       ↓
+Field matching
+       ↓
+Skill matching
+       ↓
+Academic-level matching
+       ↓
+Location matching
+       ↓
+Category matching
+       ↓
+Match Score
+       ↓
+Eligibility Checks
+       ↓
+Claude explanation
+```
+
+This makes the system more transparent than asking an LLM to produce an arbitrary percentage.
+
+The user can inspect why a recommendation received its score.
+
+---
+
+# Data schema
+
+Each opportunity follows a structured schema similar to:
 
 ```json
 {
   "id": "opp_001",
   "title": "...",
   "organization": "...",
-  "category": "Internship | Scholarship | Fellowship | Hackathon | Competition | Grant | Research | Conference | Volunteer | AI/Tech Program | Other",
+  "category": "Internship",
   "description": "...",
   "eligibility": "...",
   "location": "...",
-  "remote_status": "Remote | On-site | Hybrid",
-  "deadline": "YYYY-MM-DD or null",
-  "deadline_note": "human-readable clarification, especially when deadline is null",
-  "application_url": "https://... (the official application page)",
-  "official_source": "Name of the authoritative organization/page",
-  "source_url": "Where the record was discovered/verified",
-  "skills": ["..."],
-  "fields": ["..."],
-  "education_level": ["Undergraduate", "Graduate", "..."],
-  "country_eligibility": ["..."],
+  "remote_status": "Remote",
+  "deadline": "YYYY-MM-DD",
+  "deadline_note": "...",
+  "application_url": "https://...",
+  "official_source": "...",
+  "source_url": "https://...",
+  "skills": ["Python", "Machine Learning"],
+  "fields": ["Computer Science", "Engineering"],
+  "education_level": ["Undergraduate"],
+  "country_eligibility": ["Nigeria"],
   "funding": "...",
   "date_added": "YYYY-MM-DD",
   "last_verified": "YYYY-MM-DD",
-  "verification_status": "Verified against official source | Needs verification — ..."
+  "verification_status": "Verified against official source"
 }
 ```
 
-`utils/validators.py` enforces this shape at load time; a malformed record is
-dropped (with the rest of the app still working) rather than crashing the
-page for every student.
+Where available, records can also contain structured eligibility information such as:
 
-## Data sourcing & verification approach
+```json
+{
+  "minimum_cgpa": 3.5
+}
+```
 
-Discovery source and authoritative source are treated as different things.
-The current seed dataset (6 opportunities) was researched directly from
-official pages (`spaceappschallenge.org`, `schwarzmanscholars.org`,
-`summerofcode.withgoogle.com`, `ieeextreme.org`, `theforage.com`, and a
-university's official Mastercard Foundation Scholars Program page) as of
-**September 10, 2026**. Two entries are intentionally shown as **Closed**
-(their real deadlines have passed) and one as **Verification Needed** (because
-third-party sources disagreed on its exact date) — this is deliberate: the
-deadline-status logic is designed to never claim something is open just
-because we haven't checked.
+and:
 
-For a production version, `services/opportunity_service.py` is structured so
-a future ingestion module could plug in the same validation/dedup pipeline
-described in the project brief (discover → normalize → dedupe → validate →
-preserve official URL → flag stale/expired listings) without changing any
-page code.
+```json
+{
+  "eligible_levels": [300, 400]
+}
+```
 
-## Setup — run locally
+These structured fields allow the application to perform deterministic eligibility checks rather than relying entirely on AI interpretation.
 
-**1. Clone and enter the project**
+---
+
+# Data sourcing and verification
+
+The current dataset is intentionally a **small seed/testing dataset**.
+
+It is not intended to represent a comprehensive listing of all available student opportunities.
+
+The current phase is focused on validating:
+
+* The application architecture
+* Search and filtering
+* Opportunity analysis
+* Profile-based personalization
+* Recommendation scoring
+* Eligibility logic
+* Claude integration
+* Conversational assistance
+* Application coaching
+* Deadline/status handling
+
+The opportunities currently included in the dataset were researched from authoritative sources and include source and verification information where available.
+
+The application is designed so that the dataset can grow substantially in future development.
+
+### Planned data expansion
+
+A future version can introduce a significantly larger dataset and an automated or semi-automated ingestion pipeline:
+
+```text
+Discover
+   ↓
+Collect
+   ↓
+Normalize
+   ↓
+Deduplicate
+   ↓
+Validate
+   ↓
+Verify official source
+   ↓
+Store
+   ↓
+Flag stale/expired records
+```
+
+The existing service architecture is intended to allow this larger data pipeline to be introduced without requiring a complete rewrite of the application UI.
+
+---
+
+# Setup — run locally
+
+### 1. Clone the repository
 
 ```bash
 git clone <your-repo-url>
 cd student-opportunity-assistant
 ```
 
-**2. Create a virtual environment (recommended)**
+### 2. Create a virtual environment
+
+Windows:
+
+```bash
+py -m venv venv
+venv\Scripts\activate
+```
+
+macOS/Linux:
 
 ```bash
 python3 -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+source venv/bin/activate
 ```
 
-**3. Install dependencies**
+### 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**4. Set your API key**
+### 4. Configure environment variables
 
-```bash
-cp .env.example .env
-# then edit .env and paste your real key:
-# ANTHROPIC_API_KEY=sk-ant-...
+Copy:
+
+```text
+.env.example
 ```
 
-Get a key at <https://console.anthropic.com/settings/keys>. **Never** commit
-`.env` — it's already in `.gitignore`.
+to:
 
-**5. Run the app**
+```text
+.env
+```
+
+Then add your API keys.
+
+```env
+ANTHROPIC_API_KEY=your_anthropic_key
+GEMINI_API_KEY=your_gemini_key
+```
+
+The Gemini key is only needed for development/testing when using the optional Gemini provider.
+
+**Never commit `.env` or API keys to GitHub.**
+
+### 5. Run the application
 
 ```bash
 streamlit run app.py
 ```
 
-It opens at `http://localhost:8501`. Pages without a key still work (browsing,
-filtering, saving, the transparent score breakdown) — only the Claude-powered
-features (Analyze, Assistant, Application Helper, smart search, recommendation
-explanations) need the key, and they'll show a clear error if it's missing.
+The application will normally open at:
 
-## Adding or verifying opportunities
-
-Open `data/opportunities.json` and add an object to the `opportunities` array
-following the schema above. Then check it's valid:
-
-```bash
-python3 -c "
-from services.opportunity_service import load_opportunities
-load_opportunities(strict=True)
-print('Dataset is valid.')
-"
+```text
+http://localhost:8501
 ```
 
-This raises a clear error listing exactly which record/field is wrong if
-something doesn't match the schema.
+---
 
-To re-verify an existing record, revisit its `application_url`, update any
-changed fields, and bump `last_verified` to today's date.
+# Streamlit deployment
 
-## Testing the Claude features
+The application can be deployed through Streamlit Community Cloud using the GitHub repository.
 
-With `ANTHROPIC_API_KEY` set:
+The main entry point is:
 
-1. **Analyze an Opportunity** — paste a paragraph like: *"The Example
-   Foundation AI Fellowship is open to undergraduate students studying
-   computer science. Applicants must submit a CV and a 500-word essay by
-   December 1."* Confirm the structured output correctly reports the missing
-   fields (e.g. funding, location) as *"Not specified in the provided
-   information"* rather than inventing them.
-2. **Opportunity Assistant** — pick any opportunity, ask *"Am I eligible?"*
-   with no profile set, then set a profile on the Recommendations page and
-   ask again — the answer should change to reference your profile.
-3. **My Recommendations** — fill in the profile form, confirm the score
-   breakdown bars sum sensibly, and click "Explain in plain English" on a
-   couple of cards.
-4. **Application Helper** — paste an essay prompt and confirm Claude asks
-   about your real experiences before offering to draft anything.
+```text
+app.py
+```
 
-## GitHub setup
+After deployment, API keys should be stored in Streamlit Secrets rather than committed to the repository.
+
+Example:
+
+```toml
+ANTHROPIC_API_KEY = "your-real-anthropic-key"
+```
+
+If Gemini testing is required:
+
+```toml
+GEMINI_API_KEY = "your-real-gemini-key"
+```
+
+---
+
+# Security
+
+API keys are loaded through environment variables locally and Streamlit Secrets in deployment.
+
+The following files must never be committed:
+
+```text
+.env
+.streamlit/secrets.toml
+```
+
+They are excluded through `.gitignore`.
+
+---
+
+# Current project status
+
+This project is currently in an **active prototype/testing phase**.
+
+The current implementation is focused on validating the core experience and architecture rather than providing a production-scale opportunity database.
+
+The current priorities are:
+
+* Validate the user experience
+* Test Claude-powered workflows
+* Validate recommendation and eligibility logic
+* Test profile personalization
+* Gather feedback
+* Expand the opportunity dataset
+* Improve verification and data ingestion
+* Prepare the application for broader student use
+
+---
+
+# Limitations
+
+* The current opportunity dataset is intentionally small.
+* It is not a live or comprehensive opportunity database.
+* Opportunity information can change after verification.
+* Students should always confirm important requirements and deadlines on the official opportunity page.
+* Match scores are heuristic indicators and are not guarantees of eligibility or acceptance.
+* Some eligibility information may be unavailable if it is not structured in the dataset.
+* AI responses depend on the information provided to the model.
+* Profile persistence is currently session-based rather than account-based.
+
+---
+
+# Future development
+
+Planned improvements include:
+
+* Significantly expanding the opportunity dataset
+* Automated/semi-automated opportunity ingestion
+* Better deduplication and source verification
+* Scheduled deadline and source re-verification
+* More detailed eligibility rules
+* More precise academic-level matching
+* SQLite/PostgreSQL for larger datasets
+* User accounts and persistent profiles
+* Persistent saved opportunities across devices
+* Better recommendation personalization
+* Improved opportunity freshness monitoring
+* Additional application-preparation workflows
+
+The long-term goal is to evolve the current prototype into a reliable student opportunity discovery and preparation platform with a much larger, continuously maintained opportunity dataset.
+
+---
+
+# GitHub setup
 
 ```bash
 git init
 git add .
-git commit -m "Initial commit: Student Opportunity Assistant"
+git commit -m "Initial Student Opportunity Assistant implementation"
 git branch -M main
 git remote add origin https://github.com/<your-username>/student-opportunity-assistant.git
 git push -u origin main
 ```
 
-Double-check `.env` and `.streamlit/secrets.toml` are **not** in `git status`
-before your first push (they're git-ignored by default in this repo).
+Before pushing, verify:
 
-## Deploying on Streamlit Community Cloud
+```bash
+git status
+```
 
-1. Push this repo to GitHub (above).
-2. Go to <https://share.streamlit.io>, sign in, and click **"New app"**.
-3. Select your repo, branch (`main`), and set the main file path to `app.py`.
-4. Before/after deploying, open **"Manage app" → "Settings" → "Secrets"** and
-   paste:
-   ```toml
-   ANTHROPIC_API_KEY = "sk-ant-your-real-key"
-   ```
-5. Deploy. The app reads the key via `st.secrets` in the cloud automatically
-   (see `services/claude_service.py::_get_api_key`) — no code changes needed.
+and make sure `.env` and `.streamlit/secrets.toml` are not listed as files to commit.
 
-## Limitations
+---
 
-- The dataset is a small, manually curated starting set (6 opportunities) —
-  not a live, comprehensive listing.
-- Deadlines can change after `last_verified`; always confirm on the official
-  page before relying on any date shown.
-- The recommendation score is a transparent heuristic, not a guarantee of
-  eligibility.
-- Claude can only work with what it's given — if pasted text is ambiguous or
-  incomplete, it will report the gap rather than fill it in, which is by
-  design, but means the output is only as good as what you paste.
+# Final demo-readiness checklist
 
-## Future improvements
-
-- Move from JSON to SQLite/Postgres as the dataset grows
-- A real ingestion pipeline (discover → normalize → dedupe → validate →
-  preserve official URL → flag expired listings) plugged into
-  `opportunity_service.py`
-- Scheduled re-verification jobs updating `last_verified`
-- Accounts so saved opportunities and profiles persist across devices/sessions
-
-## Final demo-readiness checklist
-
-- [ ] `ANTHROPIC_API_KEY` set in `.env` (local) or Streamlit secrets (deployed)
-- [ ] `streamlit run app.py` boots with no errors
-- [ ] Home page loads and all four CTA buttons navigate correctly
-- [ ] Discover Opportunities returns results for a plain-language query
-- [ ] A card's "View details" and "Save" both work
-- [ ] Analyze an Opportunity returns a structured, non-fabricated breakdown
-- [ ] Opportunity Assistant maintains context across at least 2 turns
-- [ ] Recommendations page produces a saved profile and a ranked, explainable list
-- [ ] Application Helper asks about real experiences before drafting anything
-- [ ] Saved Opportunities shows upcoming deadlines correctly
-- [ ] `.env` / `.streamlit/secrets.toml` are confirmed absent from `git status`
-- [ ] Deployed Streamlit Cloud app works end-to-end with secrets configured
+* [ ] `ANTHROPIC_API_KEY` configured locally or in Streamlit Secrets
+* [ ] Application starts without errors
+* [ ] Home page loads
+* [ ] Discover Opportunities works
+* [ ] Opportunity details work
+* [ ] Official application links work
+* [ ] Save/unsave functionality works
+* [ ] My Profile saves student information
+* [ ] CGPA is stored in the profile
+* [ ] Recommendations work using the saved profile
+* [ ] Custom recommendation search works without changing the saved profile
+* [ ] Match score breakdown is visible
+* [ ] Eligibility checks are displayed separately from match score
+* [ ] Analyze an Opportunity returns a structured breakdown
+* [ ] Analyze can use the saved profile
+* [ ] Opportunity Assistant maintains conversation context
+* [ ] Application Helper coaches rather than fabricates experiences
+* [ ] Claude-powered features work with the Anthropic API
+* [ ] Gemini testing provider works when configured
+* [ ] Saved Opportunities works
+* [ ] Deadline status logic works
+* [ ] `.env` is excluded from Git
+* [ ] `.streamlit/secrets.toml` is excluded from Git
+* [ ] GitHub repository is public and clean
+* [ ] Streamlit deployment works
+* [ ] Deployed application works end-to-end
