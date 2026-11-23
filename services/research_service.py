@@ -6,7 +6,6 @@ opportunity open unless a current official source supports that status.
 """
 from __future__ import annotations
 
-from datetime import date
 from urllib.parse import urlparse
 
 
@@ -29,7 +28,7 @@ def search_opportunities(query: str, profile: dict | None = None, max_results: i
         context_terms.append("undergraduate students Nigeria")
 
     search_query = f"{query} {' '.join(context_terms)} current 2026 official application deadline eligibility"
-    raw_results = DDGS(timeout=12).text(
+    raw_results = DDGS(timeout=8).text(
         search_query,
         region="wt-wt",
         safesearch="moderate",
@@ -38,8 +37,8 @@ def search_opportunities(query: str, profile: dict | None = None, max_results: i
 
     normalized = []
     seen = set()
-    extractor = DDGS(timeout=12)
-    for item in raw_results or []:
+    extractor = DDGS(timeout=8)
+    for index, item in enumerate(raw_results or []):
         url = (item.get("href") or item.get("url") or "").strip()
         if not url.startswith(("http://", "https://")) or url in seen:
             continue
@@ -47,8 +46,9 @@ def search_opportunities(query: str, profile: dict | None = None, max_results: i
         domain = urlparse(url).netloc.lower().removeprefix("www.")
         page_excerpt = ""
         try:
-            extracted = extractor.extract(url, fmt="text_plain")
-            page_excerpt = (extracted.get("content") or "")[:5000]
+            if index < 4:
+                extracted = extractor.extract(url, fmt="text_plain")
+                page_excerpt = (extracted.get("content") or "")[:2500]
         except Exception:
             # Search snippets remain useful when a publisher blocks page extraction.
             pass
