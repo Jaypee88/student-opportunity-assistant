@@ -38,18 +38,27 @@ def search_opportunities(query: str, profile: dict | None = None, max_results: i
 
     normalized = []
     seen = set()
+    extractor = DDGS(timeout=12)
     for item in raw_results or []:
         url = (item.get("href") or item.get("url") or "").strip()
         if not url.startswith(("http://", "https://")) or url in seen:
             continue
         seen.add(url)
         domain = urlparse(url).netloc.lower().removeprefix("www.")
+        page_excerpt = ""
+        try:
+            extracted = extractor.extract(url, fmt="text_plain")
+            page_excerpt = (extracted.get("content") or "")[:5000]
+        except Exception:
+            # Search snippets remain useful when a publisher blocks page extraction.
+            pass
         normalized.append({
             "title": (item.get("title") or "Untitled result").strip(),
             "url": url,
             "domain": domain,
             "snippet": (item.get("body") or item.get("description") or "").strip(),
-            "source_type": "Likely official" if any(
+            "page_excerpt": page_excerpt,
+            "source_type": "Potential official source — confirm ownership" if any(
                 token in domain for token in (".gov", ".edu", "dangote", "foundation", "un.org")
             ) else "Third-party / verify",
         })
