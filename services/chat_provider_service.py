@@ -73,7 +73,7 @@ def ask_with_provider(
             "for deployment or to your local .env file."
         )
 
-    opportunity_context = __import__("json").dumps(
+    opportunity_context = json.dumps(
         opportunity, indent=2, ensure_ascii=False
     )
     profile_context = __import__("json").dumps(
