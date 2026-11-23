@@ -207,7 +207,7 @@ def render_opportunity_detail(opp: dict) -> None:
                 st.session_state.saved_opportunity_ids.append(opp["id"])
             st.rerun()
     with b3:
-        if st.button("Analyze with Claude", use_container_width=True, key=f"detail_analyze_{opp['id']}"):
+        if st.button("Analyze opportunity", use_container_width=True, key=f"detail_analyze_{opp['id']}"):
             st.session_state["_prefill_analyze_text"] = (
                 f"{opp['title']} \u2014 {opp['organization']}\n\n{opp['description']}\n\n"
                 f"Eligibility: {opp['eligibility']}\nDeadline: {format_deadline(opp)}"
@@ -215,7 +215,7 @@ def render_opportunity_detail(opp: dict) -> None:
             st.session_state["nav_page"] = "Analyze an Opportunity"
             st.rerun()
     with b4:
-        if st.button("Ask Claude about this", use_container_width=True, key=f"detail_ask_{opp['id']}"):
+        if st.button("Ask AI assistant about this", use_container_width=True, key=f"detail_ask_{opp['id']}"):
             st.session_state["nav_page"] = "Opportunity Assistant"
             st.session_state["assistant_selected_id"] = opp["id"]
             st.rerun()
