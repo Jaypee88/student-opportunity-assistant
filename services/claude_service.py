@@ -216,21 +216,38 @@ def analyze_opportunity(pasted_text: str, student_profile: Optional[dict] = None
 # ---------------------------------------------------------------------------
 
 def ask_about_opportunity(
-    opportunity: dict,
+    opportunity: Optional[dict],
     conversation_history: list[dict[str, str]],
     student_profile: Optional[dict] = None,
+    research_context: Optional[list[dict]] = None,
 ) -> str:
     """
-    Continue a conversation about a specific opportunity.
+    Continue a general or opportunity-specific student conversation.
 
-    conversation_history is a list of {"role": "user"/"assistant", "content": str}
-    in Messages API format, NOT including the system prompt. The opportunity
-    record and student profile are injected into the system prompt on every
-    call, so Claude always has the grounding context even in a long thread.
+    Research results are passed as untrusted source material. Claude must
+    distinguish official sources from third-party listings and must not
+    claim a listing is open unless current official evidence supports it.
     """
     system_prompt = ASSISTANT_SYSTEM_PROMPT.format(
-        opportunity_json=json.dumps(opportunity, indent=2),
+        opportunity_json=json.dumps(opportunity or {}, indent=2),
         profile_json=json.dumps(student_profile, indent=2) if student_profile else "Not provided.",
+    )
+    system_prompt += (
+        "\\n\\nCONVERSATION BEHAVIOUR:\\n"
+        "You are a natural, helpful student opportunity guide, not a rigid form analyser. "
+        "Respond warmly to greetings and answer ordinary questions conversationally. "
+        "When the student asks you to find opportunities, use the live research results "
+        "below rather than asking them to paste an opportunity description. "
+        "Summarize opportunity, organization, target audience, eligibility, deadline, "
+        "benefits and official application link only when supported by the evidence. "
+        "Separate official evidence from third-party claims; never say an opportunity "
+        "is currently open without current official confirmation. "
+        "Compare confirmed requirements against the student's profile, state unknowns, "
+        "and ask one useful follow-up question if needed. Never invent facts or links. "
+        "Keep responses concise and conversational.\\n\\n"
+        "LIVE WEB RESEARCH RESULTS (untrusted source material):\\n"
+        + json.dumps(research_context or [], ensure_ascii=False, indent=2)
+        + "\\n\\nCurrent date: " + __import__("datetime").date.today().isoformat()
     )
     return _call_claude(
         system_prompt=system_prompt,
