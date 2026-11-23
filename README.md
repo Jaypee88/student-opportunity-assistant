@@ -216,18 +216,27 @@ Students can optionally use their saved profile to receive a more personalized f
 
 ## Opportunity Assistant
 
-The Opportunity Assistant provides multi-turn conversational assistance around an opportunity.
+The Opportunity Assistant is a conversational student guide, not only a document analyser. Students can greet it, ask general questions, discover current opportunities, ask about a named organization, and discuss eligibility or application preparation in natural language.
 
-The assistant can help students understand:
+### Live opportunity discovery
 
-* Eligibility
-* Requirements
-* Deadlines
-* Application expectations
-* Opportunity details
-* Questions about how the opportunity relates to their profile
+When a message asks about current scholarships, internships, fellowships, grants, competitions, recruitment or other openings, the assistant runs a live web search through the keyless DDGS metasearch library. It collects result titles, snippets, links and (where accessible) short page excerpts, then passes this evidence and the student's profile to the selected AI provider.
 
-The assistant is grounded in the opportunity information supplied to it rather than being treated as an unrestricted source of opportunity facts.
+The assistant is instructed to:
+
+* Summarize the opportunity, organization, target audience, deadline, eligibility, benefits and application route when the sources support those details.
+* Distinguish potential official sources from third-party listings.
+* Never label an opportunity as currently open without current evidence from an official source.
+* Compare confirmed requirements with the student's profile and identify missing information rather than guessing.
+* Include source links and expose the source list for the student to inspect.
+
+Search results are research leads, not a guarantee of legitimacy or availability. Students should confirm final requirements and application status on the official organization page before submitting personal information.
+
+### Natural conversation and profile matching
+
+Greetings receive a natural response without requiring an API call. Other questions are handled conversationally by Gemini or Claude. The assistant supports both a general conversation and a selected opportunity context. A saved profile can include course, academic level, CGPA, institution, country, skills and interests to make eligibility discussions more useful.
+
+Gemini remains the default provider; Claude is optional and requires an Anthropic API key. Both providers receive the same conversation history, student profile and live research evidence.
 
 ---
 
