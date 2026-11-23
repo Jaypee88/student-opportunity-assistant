@@ -12,7 +12,7 @@ def render() -> None:
             <h1 style="font-size:2.3rem; margin-bottom:0.2rem;">Find opportunities that fit where you're going.</h1>
             <p style="font-size:1.15rem; color:#4b4b58; max-width:640px;">
                 Discover scholarships, internships, competitions, fellowships and other
-                opportunities, understand what they require, and use Claude to prepare
+                opportunities, understand what they require, and use AI assistance to prepare
                 for them — grounded in a verified opportunity database, not guesswork.
             </p>
         </div>
@@ -64,7 +64,7 @@ def render() -> None:
         ("1. Discover", "Search real, verified opportunities across categories."),
         ("2. Understand", "See eligibility, deadlines and requirements clearly."),
         ("3. Match", "Get transparent, explainable recommendations."),
-        ("4. Prepare", "Analyze listings and plan with Claude."),
+        ("4. Prepare", "Analyze listings and plan with AI assistance."),
         ("5. Apply", "Head to the official application page, ready."),
     ]
     for col, (title, desc) in zip(steps, labels):
