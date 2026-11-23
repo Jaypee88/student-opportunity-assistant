@@ -1,5 +1,6 @@
 """Provider routing for the multi-turn Opportunity Assistant."""
 
+import json
 import os
 from typing import Optional
 
@@ -76,7 +77,7 @@ def ask_with_provider(
     opportunity_context = json.dumps(
         opportunity, indent=2, ensure_ascii=False
     )
-    profile_context = __import__("json").dumps(
+    profile_context = json.dumps(
         student_profile or {}, indent=2, ensure_ascii=False
     )
     transcript = []
