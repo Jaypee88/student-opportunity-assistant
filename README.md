@@ -4,11 +4,11 @@ An AI-assisted platform that helps university students **discover, understand, e
 
 **Discover → Understand → Match → Evaluate → Prepare → Apply**
 
-Built primarily with **Streamlit and the Anthropic Claude API**.
+Built with **Streamlit**, with selectable **Google Gemini and Anthropic Claude** AI providers.
 
 The core design principle is simple:
 
-> **Claude should reason over information, not invent it.**
+> **AI should reason over information, not invent it.**
 
 The application separates opportunity data and deterministic application logic from AI reasoning. This makes the system more transparent, easier to evaluate, and safer for students relying on eligibility and deadline information.
 
@@ -45,7 +45,7 @@ STRUCTURED OPPORTUNITY DATA
    ↓
 RULE-BASED ELIGIBILITY & MATCHING
    ↓
-CLAUDE REASONING / EXPLANATION
+GEMINI OR CLAUDE REASONING / EXPLANATION
    ↓
 STUDENT
 ```
@@ -95,7 +95,7 @@ Students can search and filter the curated opportunity dataset using:
 * Deadline/status
 * Other supported filters
 
-Natural-language search can also be interpreted by Claude and converted into structured search criteria.
+Natural-language search can also be interpreted by the configured AI provider and converted into structured search criteria.
 
 Claude does **not** return invented opportunities.
 
@@ -264,11 +264,11 @@ Deadline status is calculated deterministically rather than inferred by Claude.
 
 ---
 
-# Built with Claude
+# AI providers
 
-**Claude is the primary AI provider and the intended AI foundation of this project.**
+**Students can choose Gemini or Claude for supported AI-assisted workflows. Gemini is the default for the Opportunity Assistant; Claude is optional and requires an Anthropic API key.**
 
-Every feature that uses Claude is centralized through:
+Claude API calls are centralized through:
 
 ```text
 services/claude_service.py
@@ -592,7 +592,7 @@ ANTHROPIC_API_KEY=your_anthropic_key
 GEMINI_API_KEY=your_gemini_key
 ```
 
-The Gemini key is only needed for development/testing when using the optional Gemini provider.
+Gemini is the default chat provider and requires GEMINI_API_KEY. Claude is optional and requires ANTHROPIC_API_KEY.
 
 **Never commit `.env` or API keys to GitHub.**
 
@@ -744,8 +744,8 @@ and make sure `.env` and `.streamlit/secrets.toml` are not listed as files to co
 * [ ] Analyze can use the saved profile
 * [ ] Opportunity Assistant maintains conversation context
 * [ ] Application Helper coaches rather than fabricates experiences
-* [ ] Claude-powered features work with the Anthropic API
-* [ ] Gemini testing provider works when configured
+* [ ] Claude-powered features work when ANTHROPIC_API_KEY is configured
+* [ ] Gemini chat and analysis work when GEMINI_API_KEY is configured
 * [ ] Saved Opportunities works
 * [ ] Deadline status logic works
 * [ ] `.env` is excluded from Git
