@@ -12,6 +12,7 @@ import re
 from typing import Any, Optional
 
 from google import genai
+import streamlit as st
 
 
 class GeminiServiceError(Exception):
@@ -23,7 +24,14 @@ class GeminiService:
     """Handles communication with Google's Gemini API."""
 
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY")
+        self.api_key = api_key
+        if not self.api_key:
+            try:
+                self.api_key = st.secrets.get("GEMINI_API_KEY")
+            except Exception:
+                self.api_key = None
+        if not self.api_key:
+            self.api_key = os.getenv("GEMINI_API_KEY")
 
         if not self.api_key:
             raise GeminiServiceError(
@@ -38,7 +46,7 @@ class GeminiService:
             ) from exc
 
         # A current Gemini model suitable for general text tasks.
-        self.model = "gemini-3.6-flash"
+        self.model = "gemini-3.8-flash"
 
     def generate(
         self,
