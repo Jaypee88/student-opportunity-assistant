@@ -6,6 +6,7 @@ opportunity open unless a current official source supports that status.
 """
 from __future__ import annotations
 
+from datetime import date
 from urllib.parse import urlparse
 
 
@@ -27,7 +28,7 @@ def search_opportunities(query: str, profile: dict | None = None, max_results: i
     if not context_terms:
         context_terms.append("undergraduate students Nigeria")
 
-    search_query = f"{query} {' '.join(context_terms)} current 2026 official application deadline eligibility"
+    search_query = f"{query} {' '.join(context_terms)} current {date.today().year} official application deadline eligibility"
     raw_results = DDGS(timeout=8).text(
         search_query,
         region="wt-wt",
@@ -73,6 +74,7 @@ def is_opportunity_discovery(message: str) -> bool:
         "hackathon", "competition", "currently open", "still open", "deadline",
         "application open", "can i apply", "program accepting", "recruitment",
         "graduate trainee", "dangote", "google summer", "fully funded",
+        "open for me", "available for students", "what can i apply", "any openings",
     )
     return any(term in text for term in terms)
 
