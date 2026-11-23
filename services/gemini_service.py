@@ -35,7 +35,7 @@ class GeminiService:
 
         if not self.api_key:
             raise GeminiServiceError(
-                "No Gemini API key found. Add GEMINI_API_KEY to your .env file."
+                "No Gemini API key found. Add GEMINI_API_KEY to local .env or Streamlit Secrets."
             )
 
         try:
