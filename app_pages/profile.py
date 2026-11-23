@@ -62,6 +62,12 @@ def render() -> None:
                 format="%.2f",
                 help="Use your institution's CGPA scale, e.g. 4.00/5.00.",
             )
+        institution = st.text_input(
+            "University / institution",
+            value=profile.get("institution", ""),
+            placeholder="e.g. Nnamdi Azikiwe University",
+        )
+
         country = st.text_input(
             "Country / location",
             value=profile.get("country", ""),
@@ -107,6 +113,7 @@ def render() -> None:
             st.session_state.student_profile = {
                 "field_of_study": field_of_study.strip(),
                 "academic_level": academic_level.strip(),
+                "institution": institution.strip(),
                 "country": country.strip(),
                 "cgpa": cgpa,
                 "remote_preference": remote_pref,
@@ -140,6 +147,9 @@ def render() -> None:
             st.write(
                 f"**Academic level:** "
                 f"{profile.get('academic_level') or 'Not set'}"
+            )
+            st.write(
+                f"**Institution:** {profile.get('institution') or 'Not set'}"
             )
             st.write(
                 f"**Location:** {profile.get('country') or 'Not set'}"
