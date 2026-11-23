@@ -2,6 +2,7 @@
 
 import json
 import os
+import time
 from typing import Optional
 
 import streamlit as st
@@ -108,25 +109,52 @@ CONVERSATION:
 
 Write the next assistant reply only."""
 
-    try:
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model="gemini-3.8-flash",
-            contents=prompt,
-            config={"temperature": 0.35},
-        )
-        if not response.text:
-            raise ChatProviderError("Gemini returned an empty response. Please try again.")
-        return response.text.strip()
-    except ChatProviderError:
-        raise
-    except Exception as exc:
-        message = str(exc)
-        if "API_KEY_INVALID" in message or "API key not valid" in message:
-            raise ChatProviderError(
-                "Google rejected the Gemini API key. Check that the replacement key "
-                "is active and correctly saved in Streamlit Secrets."
-            ) from exc
-        raise ChatProviderError(
-            f"Gemini could not complete the request: {message}"
-        ) from exc
+    client = genai.Client(api_key=api_key)
+    # A 503 is usually temporary model-capacity pressure. Retry the primary
+    # model briefly, then try Google's lightweight Flash model as a fallback.
+    models_to_try = ["gemini-3.8-flash", "gemini-3.5-flash-lite"]
+    last_error = None
+
+    for model_index, model_name in enumerate(models_to_try):
+        attempts = 2 if model_index == 0 else 1
+        for attempt in range(attempts):
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config={"temperature": 0.35},
+                )
+                if not response.text:
+                    raise ChatProviderError(
+                        "Gemini returned an empty response. Please try again."
+                    )
+                return response.text.strip()
+            except ChatProviderError:
+                raise
+            except Exception as exc:
+                last_error = exc
+                message = str(exc)
+                if "API_KEY_INVALID" in message or "API key not valid" in message:
+                    raise ChatProviderError(
+                        "Google rejected the Gemini API key. Check that the replacement key "
+                        "is active and correctly saved in Streamlit Secrets."
+                    ) from exc
+
+                is_temporary = any(
+                    marker in message.upper()
+                    for marker in ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED",
+                                   "500", "502", "504", "INTERNAL", "DEADLINE_EXCEEDED")
+                )
+                if not is_temporary:
+                    raise ChatProviderError(
+                        f"Gemini could not complete the request: {message}"
+                    ) from exc
+
+                if attempt < attempts - 1:
+                    time.sleep(2 ** (attempt + 1))
+
+    raise ChatProviderError(
+        "Gemini is temporarily at capacity. The app retried Gemini 3.8 Flash and "
+        "attempted the lightweight fallback model, but neither was available. "
+        "Please wait a minute and try again."
+    ) from last_error
