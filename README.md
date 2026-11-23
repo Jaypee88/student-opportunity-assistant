@@ -128,6 +128,7 @@ Current profile information includes:
 * Field of study
 * Academic level
 * CGPA
+* University/institution
 * Country/location
 * Remote/on-site preference
 * Fields of interest
