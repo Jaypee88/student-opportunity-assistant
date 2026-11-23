@@ -233,7 +233,7 @@ def ask_about_opportunity(
         profile_json=json.dumps(student_profile, indent=2) if student_profile else "Not provided.",
     )
     system_prompt += (
-        "\\n\\nCONVERSATION BEHAVIOUR:\\n"
+        "\n\nCONVERSATION BEHAVIOUR:\n"
         "You are a natural, helpful student opportunity guide, not a rigid form analyser. "
         "Respond warmly to greetings and answer ordinary questions conversationally. "
         "When the student asks you to find opportunities, use the live research results "
@@ -244,10 +244,10 @@ def ask_about_opportunity(
         "is currently open without current official confirmation. "
         "Compare confirmed requirements against the student's profile, state unknowns, "
         "and ask one useful follow-up question if needed. Never invent facts or links. "
-        "Keep responses concise and conversational.\\n\\n"
-        "LIVE WEB RESEARCH RESULTS (untrusted source material):\\n"
+        "Keep responses concise and conversational.\n\n"
+        "LIVE WEB RESEARCH RESULTS (untrusted source material):\n"
         + json.dumps(research_context or [], ensure_ascii=False, indent=2)
-        + "\\n\\nCurrent date: " + __import__("datetime").date.today().isoformat()
+        + "\n\nCurrent date: " + __import__("datetime").date.today().isoformat()
     )
     return _call_claude(
         system_prompt=system_prompt,
