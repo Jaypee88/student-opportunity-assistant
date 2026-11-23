@@ -9,6 +9,7 @@ is unavailable.
 import os
 import json
 import re
+import time
 from typing import Any, Optional
 
 from google import genai
@@ -57,26 +58,55 @@ class GeminiService:
         Send a prompt to Gemini and return the generated text.
         """
 
-        try:
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config={
-                    "temperature": temperature,
-                },
-            )
+        models_to_try = [self.model, "gemini-3.5-flash-lite"]
+        last_error = None
 
-            if not response.text:
-                raise GeminiServiceError(
-                    "Gemini returned an empty response."
-                )
+        for model_index, model_name in enumerate(models_to_try):
+            attempts = 2 if model_index == 0 else 1
+            for attempt in range(attempts):
+                try:
+                    response = self.client.models.generate_content(
+                        model=model_name,
+                        contents=prompt,
+                        config={"temperature": temperature},
+                    )
 
-            return response.text.strip()
+                    if not response.text:
+                        raise GeminiServiceError(
+                            "Gemini returned an empty response."
+                        )
 
-        except Exception as exc:
-            raise GeminiServiceError(
-                f"Gemini request failed: {exc}"
-            ) from exc
+                    return response.text.strip()
+
+                except GeminiServiceError:
+                    raise
+                except Exception as exc:
+                    last_error = exc
+                    message = str(exc)
+                    if "API_KEY_INVALID" in message or "API key not valid" in message:
+                        raise GeminiServiceError(
+                            "Google rejected the Gemini API key. Check that it is active "
+                            "and correctly saved in Streamlit Secrets."
+                        ) from exc
+
+                    is_temporary = any(
+                        marker in message.upper()
+                        for marker in ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED",
+                                       "500", "502", "504", "INTERNAL", "DEADLINE_EXCEEDED")
+                    )
+                    if not is_temporary:
+                        raise GeminiServiceError(
+                            f"Gemini request failed: {message}"
+                        ) from exc
+
+                    if attempt < attempts - 1:
+                        time.sleep(2 ** (attempt + 1))
+
+        raise GeminiServiceError(
+            "Gemini is temporarily at capacity. The app retried the primary model "
+            "and attempted the lightweight fallback, but neither was available. "
+            "Please wait a minute and try again."
+        ) from last_error
 
     def generate_json(
         self,
