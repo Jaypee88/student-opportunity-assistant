@@ -31,28 +31,28 @@ That's unacceptable for something students rely on to make real decisions.
 So this platform is built around three layers:
 
 ```
-SOURCE  →  VERIFIED OPPORTUNITY DATA  →  CLAUDE  →  STUDENT
+SOURCE  →  VERIFIED OPPORTUNITY DATA  →  AI REASONING  →  STUDENT
 ```
 
 *not*
 
 ```
-Internet  →  Claude guesses  →  Student
+Internet  →  AI guesses  →  Student
 ```
 
 Every opportunity in the database was researched from its official
 organization page (or a reputable platform like Devpost/Forage, cross-checked
 against the official page where possible) and stored with its
-`official_source`, `application_url`, and `last_verified` date. Claude never
-generates new opportunities — it only reasons over records that are already
+`official_source`, `application_url`, and `last_verified` date. The AI providers never
+generate new opportunities — it only reasons over records that are already
 in the database, or text the student pastes themselves.
         """
     )
 
-    st.markdown("### What Claude actually does here")
+    st.markdown("### What the AI providers actually do here")
     st.markdown(
         """
-| Feature | What Claude does | What Claude does NOT do |
+| Feature | What AI does | What AI does NOT do |
 |---|---|---|
 | Smart search | Suggests keywords/categories from a natural-language query | Invent or return opportunities directly |
 | Analyze an Opportunity | Structures pasted text into a clear breakdown | Fill in missing eligibility/deadline details |
@@ -60,7 +60,7 @@ in the database, or text the student pastes themselves.
 | Recommendations | Explains a match in plain language | Compute the match score itself (that's rule-based) |
 | Application Helper | Coaches structure and helps refine the student's own words | Fabricate achievements, awards, or experiences |
 
-Every Claude-facing prompt in this app includes an explicit instruction not to
+Every AI-facing prompt in this app includes an explicit instruction not to
 invent information, and to say **"Not specified in the provided information"**
 when something is missing, rather than guessing.
         """
@@ -74,11 +74,10 @@ when something is missing, rather than guessing.
   and sorts the JSON dataset (no AI involved)
 - **`services/recommendation_service.py`** — transparent, rule-based scoring
   (field / skill / education level / location / category match)
-- **`services/claude_service.py`** — the only module that calls the Anthropic
-  API, using the Messages API for both single-turn (analysis, search
-  interpretation, recommendation explanations) and multi-turn (Opportunity
-  Assistant, Application Helper) interactions
-- **`utils/claude_prompts.py`** — every system prompt, as reviewable data
+- **`services/claude_service.py`** — Anthropic API integration for Claude-powered workflows
+- **`services/gemini_service.py`** — Google Gemini integration for analysis and interpretation
+- **`services/chat_provider_service.py`** — routes Opportunity Assistant conversations to the selected provider
+- **`utils/claude_prompts.py`** — Claude system prompts, kept separate for review
         """
     )
 
@@ -100,7 +99,7 @@ when something is missing, rather than guessing.
 - The recommendation score is a simple, transparent heuristic — it is a
   starting point for exploration, not a guarantee of eligibility or a
   substitute for reading the official requirements.
-- Claude can still make mistakes when interpreting pasted text (e.g. if the
+- AI-generated explanations can still contain mistakes when interpreting pasted text (e.g. if the
   text itself is ambiguous or incomplete) — it reports what's missing, but it
   can't recover information that was never given to it.
             """
