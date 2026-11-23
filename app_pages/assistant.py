@@ -112,27 +112,38 @@ def render() -> None:
                     st.warning(f"Web research could not run: {exc}")
 
         with st.chat_message("assistant"):
-            with st.spinner(f"{provider} is preparing your answer..."):
-                try:
-                    reply = ask_with_provider(
-                        provider=provider,
-                        opportunity=opportunity,
-                        conversation_history=history,
-                        student_profile=st.session_state.get("student_profile") or None,
-                        research_context=research_results,
+            try:
+                if is_simple_greeting(prompt):
+                    reply = (
+                        "Hi! 👋 I'm your Student Opportunity Assistant. I can help you "
+                        "discover scholarships, internships, fellowships and other opportunities, "
+                        "check eligibility against your profile, understand requirements, and "
+                        "prepare stronger applications. What are you looking for today?"
                     )
-                    st.markdown(reply)
-                    history.append({"role": "assistant", "content": reply})
-                    if research_results:
-                        with st.expander("Web sources reviewed", expanded=False):
-                            for result in research_results:
-                                st.markdown(f"**[{result['title']}]({result['url']})**")
-                                st.caption(f"{result['domain']} · {result['source_type']}")
-                                if result["snippet"]:
-                                    st.write(result["snippet"])
-                except ChatProviderError as exc:
-                    st.error(str(exc))
-                    history.pop()
+                else:
+                    with st.spinner(f"{provider} is preparing your answer..."):
+                        reply = ask_with_provider(
+                            provider=provider,
+                            opportunity=opportunity,
+                            conversation_history=history,
+                            student_profile=st.session_state.get("student_profile") or None,
+                            research_context=research_results,
+                        )
+                st.markdown(reply)
+                history.append({"role": "assistant", "content": reply})
+                if research_results:
+                    with st.expander("Web sources reviewed", expanded=False):
+                        for result in research_results:
+                            st.markdown(f"**[{result['title']}]({result['url']})**")
+                            st.caption(f"{result['domain']} · {result['source_type']}")
+                            if result["snippet"]:
+                                st.write(result["snippet"])
+                            if result.get("page_excerpt"):
+                                with st.expander("Page excerpt", expanded=False):
+                                    st.write(result["page_excerpt"][:1800])
+            except ChatProviderError as exc:
+                st.error(str(exc))
+                history.pop()
 
     if history and st.button("Clear conversation", type="secondary"):
         chats[chat_key] = []
